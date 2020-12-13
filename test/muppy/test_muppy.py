@@ -68,9 +68,9 @@ class MuppyTest(unittest.TestCase):
         maximum = 958
         objects = []
         for i in range(1000):
-            rand = random.randint(0,1000)
-            objects.append(' ' * rand)
+            objects.append(' ' * i)
         objects = muppy.filter(objects, min=minimum, max=maximum)
+        self.assert_(len(objects) != 0)
         for o in objects:
             self.assert_(minimum <= getsizeof(o) <= maximum)
 
@@ -205,6 +205,16 @@ class MuppyTest(unittest.TestCase):
         del objs
         self.assertEqual(gc.collect(), 0)
         gc.enable()
+
+    def test_untracked_containers(self):
+        """Test whether untracked container objects are detected.
+        """
+        untracked = {}
+        tracked = {'untracked': untracked}
+        self.assertTrue(gc.is_tracked(tracked))
+        self.assertFalse(gc.is_tracked(untracked))
+        objects = [id(o) for o in muppy.get_objects()]
+        self.assertTrue(id(untracked) in objects)
 
 
 def suite():
