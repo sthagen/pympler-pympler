@@ -2,20 +2,46 @@ import doctest
 import sys
 import unittest
 
+from io import StringIO
 from sys import getsizeof
 
 from pympler import summary, muppy
-from pympler.util.compat import StringIO
 
 
 class SummaryTest(unittest.TestCase):
 
-    def test_repr(self):
-        """Test that the right representation is returned. """
-        self.assert_(summary._repr(''), "<type 'str'>")
-        self.assert_(summary._repr('', 1), "<type 'str'>")
-        self.assert_(summary._repr('', verbosity=1), "<type 'str'>")
-        self.assert_(summary._repr('', verbosity=100), "<type 'str'>")
+    def test_repr_str(self):
+        """Test that the right representation is returned for strings. """
+        self.assertEqual(summary._repr(''), 'str')
+        self.assertEqual(summary._repr('', 1), 'str')
+        self.assertEqual(summary._repr('', verbosity=1), 'str')
+        self.assertEqual(summary._repr('', verbosity=2), 'str')
+        self.assertEqual(summary._repr('', verbosity=100), 'str')
+
+    def test_repr_dict(self):
+        """Test that the right representation is returned for dicts. """
+        self.assertEqual(summary._repr({'a': 1}), 'dict')
+        self.assertEqual(summary._repr({'a': 1}, 1), 'dict')
+        self.assertEqual(summary._repr({'a': 1}, verbosity=1), 'dict')
+        self.assertEqual(summary._repr({'a': 1}, verbosity=2), 'dict, len=1')
+        self.assertEqual(summary._repr({'a': 1}, verbosity=3), 'dict, len=1')
+        self.assertEqual(summary._repr({'a': 1}, verbosity=100), 'dict, len=1')
+
+    def test_repr_function(self):
+        """Test that the right representation is returned for functions. """
+        def func():
+            pass
+
+        self.assertEqual(summary._repr(func), 'function (func)')
+        self.assertEqual(summary._repr(func, 1), 'function (func)')
+        self.assertEqual(summary._repr(func, verbosity=1),
+                         'function (func)')
+        self.assertEqual(summary._repr(func, verbosity=2),
+                         'function (muppy.test_summary.func)')
+        self.assertEqual(summary._repr(func, verbosity=3),
+                         'function (muppy.test_summary.func)')
+        self.assertEqual(summary._repr(func, verbosity=100),
+                         'function (muppy.test_summary.func)')
 
     def test_summarize(self):
         """Test summarize method. """
@@ -26,7 +52,7 @@ class SummaryTest(unittest.TestCase):
                     [summary._repr({}), 1, getsizeof({})]]
         res = summary.summarize(objects)
         for row_e in res:
-            self.assert_(row_e in expected)
+            self.assertTrue(row_e in expected)
 
     def test_summary_diff(self):
         """Test summary diff. """
@@ -84,31 +110,31 @@ class SummaryTest(unittest.TestCase):
             if row[0] == summary._repr(''):
                 totalsize = getsizeof('quick') + getsizeof('brown') +\
                             getsizeof('fox')
-                self.assert_(row[1] == 3, "%s != %s" % (row[1], 3))
-                self.assert_(row[2] == totalsize, totalsize)
+                self.assertTrue(row[1] == 3, "%s != %s" % (row[1], 3))
+                self.assertTrue(row[2] == totalsize, totalsize)
                 checked_str = True
             if row[0] == summary._repr({}):
-                self.assert_(row[1] == 0)
-                self.assert_(row[2] == 0)
+                self.assertTrue(row[1] == 0)
+                self.assertTrue(row[2] == 0)
                 checked_dict = True
             if row[0] == summary._repr((1,)):
-                self.assert_(row[1] == -1)
-                self.assert_(row[2] == -getsizeof((1,)))
+                self.assertTrue(row[1] == -1)
+                self.assertTrue(row[2] == -getsizeof((1,)))
                 checked_tuple = True
 
-        self.assert_(checked_str, "no str found in summary")
-        self.assert_(checked_dict, "no dict found in summary")
-        self.assert_(checked_tuple, "no tuple found in summary")
+        self.assertTrue(checked_str, "no str found in summary")
+        self.assertTrue(checked_dict, "no dict found in summary")
+        self.assertTrue(checked_tuple, "no tuple found in summary")
 
         summary._subtract(summ, 'quick')
         summary._subtract(summ, 'brown')
         checked_str = False
         for row in summ:
             if row[0] == summary._repr(''):
-                self.assert_(row[1] == 1)
-                self.assert_(row[2] == getsizeof('fox'))
+                self.assertTrue(row[1] == 1)
+                self.assertTrue(row[2] == getsizeof('fox'))
                 checked_str = True
-        self.assert_(checked_str, "no str found in summ")
+        self.assertTrue(checked_str, "no str found in summ")
 
     def test_sweep(self):
         """Test that all and only empty entries are removed from a summary."""
@@ -124,8 +150,8 @@ class SummaryTest(unittest.TestCase):
                 found_dict = True
             if row[0] == "<type 'tuple'>":
                 found_tuple = True
-        self.assert_(found_dict == False)
-        self.assert_(found_tuple == False)
+        self.assertTrue(found_dict == False)
+        self.assertTrue(found_tuple == False)
         # do not remove row if one of the sizes is not empty
         # e.g. if the number of objects of a type did not change, but the
         # total size did
@@ -138,10 +164,10 @@ class SummaryTest(unittest.TestCase):
         for row in summ:
             if row[0] == summary._repr(''):
                 found_string = True
-                self.assert_(row[1] == 0)
+                self.assertTrue(row[1] == 0)
                 totalsize = getsizeof('fox') - getsizeof('42')
-                self.assert_(row[2] == totalsize)
-        self.assert_(found_string == True)
+                self.assertTrue(row[2] == totalsize)
+        self.assertTrue(found_string == True)
 
     def test_traverse(self):
         """Test that all objects of a summary are traversed."""
@@ -152,11 +178,11 @@ class SummaryTest(unittest.TestCase):
         s = [['row1', 1, 2], ['row2', 3, 4], ['row3', 5, 6]]
         summary._traverse(s, remember, touched)
 
-        self.assert_(s in touched)
+        self.assertTrue(s in touched)
         for row in s:
-            self.assert_(row in touched)
+            self.assertTrue(row in touched)
             for item in row:
-                self.assert_(item in touched)
+                self.assertTrue(item in touched)
 
 
 
